@@ -121,8 +121,7 @@ let endpoints =
             POST, insertUserHandler ]
     ]
 
-SQLitePCL.raw.SetProvider(new SQLitePCL.SQLite3Provider_e_sqlite3());
-Dapper.FSharp.SQLite.OptionTypes.register()
+SQLitePCL.raw.SetProvider(new SQLitePCL.SQLite3Provider_e_sqlite3())
 Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true |> ignore
 
 let upgrader = 
