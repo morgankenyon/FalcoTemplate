@@ -1,0 +1,27 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E7539605-2A64-4421-9EB2-E3164C741CAE}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FalcoTemplate.Api", "src\FalcoTemplate.Api\FalcoTemplate.Api.fsproj", "{4E5964FA-BD33-4262-9CD1-6A30E973A87D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4E5964FA-BD33-4262-9CD1-6A30E973A87D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E5964FA-BD33-4262-9CD1-6A30E973A87D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E5964FA-BD33-4262-9CD1-6A30E973A87D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E5964FA-BD33-4262-9CD1-6A30E973A87D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{4E5964FA-BD33-4262-9CD1-6A30E973A87D} = {E7539605-2A64-4421-9EB2-E3164C741CAE}
+	EndGlobalSection
+EndGlobal
