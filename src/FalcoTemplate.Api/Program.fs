@@ -1,7 +1,11 @@
+module FalcoTemplate.Api
+
+open DbUp
 open Falco
 open Falco.Markup
 open Falco.Routing
 open Microsoft.AspNetCore.Builder
+open System.Data.SQLite
 // ^-- this import adds many useful extensions
 
 let form =
@@ -20,6 +24,17 @@ let endpoints =
             POST, Response.ofEmpty ]
     ]
 
+SQLitePCL.raw.SetProvider(new SQLitePCL.SQLite3Provider_e_sqlite3());
+
+let upgrader = 
+    DeployChanges.To.SqliteDatabase("Data Source=./falco.db").WithScriptsFromFileSystem("./Scripts").WithTransaction().LogToConsole().Build()
+
+let result = upgrader.PerformUpgrade()
+//DeployChanges.To
+//    .SqlDatabase(connectionString)
+//    .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly())
+//    .LogToConsole()
+//    .Build();
 wapp.UseRouting()
     .UseFalco(endpoints)
     .Run()

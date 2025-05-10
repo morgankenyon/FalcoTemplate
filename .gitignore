@@ -40,3 +40,7 @@ tinroll.api/tin.db
 # React Frontend
 node_modules/
 .fake
+
+# db
+*.tmp
+*.db
