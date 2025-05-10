@@ -1,7 +1,6 @@
 module FalcoTemplate.Api
 
-open Dapper.FSharp
-open Dapper.FSharp.SQLite
+open Dapper
 open DbUp
 open Falco
 open Falco.Markup
@@ -17,6 +16,7 @@ type NewUser =
         Phone: string
     }
 
+
 type User =
     {
         UserId : int32
@@ -24,7 +24,7 @@ type User =
         LastName : string
         Phone: string
     }
-
+[<CLIMutable>]
 type DbUser =
     {
         user_id : int32
@@ -33,42 +33,77 @@ type DbUser =
         phone : string
     }
 
-let usersTable = table'<DbUser> "users"
-///DB Stuff
-let insertUser (newUser: NewUser) =
+let toUser (dbUser: DbUser) : User =
+    {
+        UserId = dbUser.user_id
+        FirstName = dbUser.first_name
+        LastName = dbUser.last_name
+        Phone = dbUser.phone
+    }
+
+/////DB Stuff
+
+let getAllUsers () =
+    let sql = "SELECT * FROM users"
+
     task {
         use conn = new System.Data.SQLite.SQLiteConnection("Data Source=./falco.db")
         conn.Open()
 
-        let user =
-            {
-                user_id = 0
-                first_name = newUser.FirstName
-                last_name = newUser.LastName
-                phone = newUser.Phone
-            }
+        let! dbUsers = conn.QueryAsync<DbUser>(sql) //TODO - cancellationToken
 
-        let! insertedCount =
-            insert {
-                for p in usersTable do
-                value user
-                excludeColumn p.user_id
-            } |> conn.InsertAsync<DbUser>
+        let ree = 
+            dbUsers
+            |> Seq.map (fun u -> toUser u)
+            |> Seq.toList
 
-        return insertedCount
+        return ree
+    }
+
+let insertUser (newUser: NewUser) =
+    let sql = 
+        """
+        INSERT INTO users (
+            first_name,
+            last_name,
+            phone
+        ) VALUES (
+            @firstName,
+            @lastName,
+            @phone
+        )
+        """
+
+    task {
+        use conn = new System.Data.SQLite.SQLiteConnection("Data Source=./falco.db")
+        let cmd = new System.Data.SQLite.SQLiteCommand(sql, conn)
+        cmd.Parameters.AddWithValue("@firstName", newUser.FirstName) |> ignore
+        cmd.Parameters.AddWithValue("@lastName", newUser.LastName) |> ignore
+        cmd.Parameters.AddWithValue("@phone", newUser.Phone) |> ignore
+        conn.Open()
+
+        let! _ = cmd.ExecuteNonQueryAsync() //TODO - cancellationToken
+        return conn.LastInsertRowId
     }
 
 ///Handler stuff
 let insertUserHandler : HttpHandler =
     let handleOk (user : NewUser) : HttpHandler = fun ctx ->
         task {
-            let! count = insertUser user
+            let! userId = insertUser user
 
-            let message = sprintf "Updated Records: %d" count
+            let message = sprintf "UserId: %d" userId
             return Response.ofPlainText message ctx
         }
 
     Request.mapJson handleOk
+
+let getAllUsersHandler : HttpHandler = fun ctx ->
+    task {
+        let! users = getAllUsers()
+
+        return Response.ofJson users ctx
+    }
 
 let form =
     Templates.html5 "en" [] [
@@ -82,7 +117,7 @@ let endpoints =
     [
         get "/" (Response.ofPlainText "Hello from /")
         all "/user" [
-            GET, Response.ofHtml form
+            GET, getAllUsersHandler
             POST, insertUserHandler ]
     ]
 
@@ -94,11 +129,8 @@ let upgrader =
     DeployChanges.To.SqliteDatabase("Data Source=./falco.db").WithScriptsFromFileSystem("./Scripts").WithTransaction().LogToConsole().Build()
 
 let result = upgrader.PerformUpgrade()
-//DeployChanges.To
-//    .SqlDatabase(connectionString)
-//    .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly())
-//    .LogToConsole()
-//    .Build();
+
+//TODO - handle any errors here
 wapp.UseRouting()
     .UseFalco(endpoints)
     .Run()
