@@ -6,9 +6,11 @@ open Falco
 open Falco.Markup
 open Falco.Routing
 open Microsoft.AspNetCore.Builder
+open Npgsql
+open System.Data
+open System
 
 ///Model stuff
-
 type NewUser =
     {
         FirstName : string
@@ -42,12 +44,12 @@ let toUser (dbUser: DbUser) : User =
     }
 
 /////DB Stuff
-
+let connStr = "Host=localhost;Username=postgres;Password=password123;Database=falco"
 let getAllUsers () =
-    let sql = "SELECT * FROM users"
+    let sql = "SELECT * FROM dbo.users"
 
     task {
-        use conn = new System.Data.SQLite.SQLiteConnection("Data Source=./falco.db")
+        use conn = new NpgsqlConnection(connStr) :> IDbConnection
         conn.Open()
 
         let! dbUsers = conn.QueryAsync<DbUser>(sql) //TODO - cancellationToken
@@ -63,7 +65,7 @@ let getAllUsers () =
 let insertUser (newUser: NewUser) =
     let sql = 
         """
-        INSERT INTO users (
+        INSERT INTO dbo.users (
             first_name,
             last_name,
             phone
@@ -71,19 +73,17 @@ let insertUser (newUser: NewUser) =
             @firstName,
             @lastName,
             @phone
-        )
+        ) RETURNING user_id;
         """
 
     task {
-        use conn = new System.Data.SQLite.SQLiteConnection("Data Source=./falco.db")
-        let cmd = new System.Data.SQLite.SQLiteCommand(sql, conn)
-        cmd.Parameters.AddWithValue("@firstName", newUser.FirstName) |> ignore
-        cmd.Parameters.AddWithValue("@lastName", newUser.LastName) |> ignore
-        cmd.Parameters.AddWithValue("@phone", newUser.Phone) |> ignore
+        use conn = new NpgsqlConnection(connStr)
+        let dbParams = {| firstName = newUser.FirstName; lastName = newUser.LastName; phone = newUser.Phone |}
         conn.Open()
 
-        let! _ = cmd.ExecuteNonQueryAsync() //TODO - cancellationToken
-        return conn.LastInsertRowId
+        let! userId = conn.ExecuteScalarAsync<int>(sql, dbParams) //TODO - cancellationToken
+
+        return userId
     }
 
 ///Handler stuff
@@ -125,11 +125,21 @@ SQLitePCL.raw.SetProvider(new SQLitePCL.SQLite3Provider_e_sqlite3())
 Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true |> ignore
 
 let upgrader = 
-    DeployChanges.To.SqliteDatabase("Data Source=./falco.db").WithScriptsFromFileSystem("./Scripts").WithTransaction().LogToConsole().Build()
+    DeployChanges.To.PostgresqlDatabase(connStr).WithScriptsFromFileSystem("./Scripts").WithTransaction().LogToConsole().Build()
 
 let result = upgrader.PerformUpgrade()
 
-//TODO - handle any errors here
-wapp.UseRouting()
-    .UseFalco(endpoints)
-    .Run()
+if not result.Successful then
+    Console.ForegroundColor = ConsoleColor.Red |> ignore
+    Console.WriteLine(result.Error);
+    Console.ResetColor();
+#if DEBUG
+    Console.ReadLine() |> ignore
+#endif
+    exit -1
+else
+
+    //TODO - handle any errors here
+    wapp.UseRouting()
+        .UseFalco(endpoints)
+        .Run()

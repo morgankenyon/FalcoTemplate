@@ -5,7 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Scripts\0001_CreateUserTable.sql">
+    <EmbeddedResource Include="Scripts\0001_CreateDboSchema.sql" />
+    <EmbeddedResource Include="Scripts\0002_CreateUserTable.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </EmbeddedResource>
     <Compile Include="Program.fs" />
@@ -13,12 +14,13 @@
 
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.66" />
-    <PackageReference Include="dbup-sqlite" Version="6.0.1" />
+    <PackageReference Include="dbup-postgresql" Version="6.0.3" />
     <PackageReference Include="Falco" Version="5.0.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.4" />
-    <PackageReference Include="System.Data.Sqlite" Version="1.0.119" />
   </ItemGroup>
 
-  <ItemGroup />
+  <ItemGroup>
+    <PackageReference Include="Npgsql" Version="9.0.3" />
+  </ItemGroup>
 
 </Project>
